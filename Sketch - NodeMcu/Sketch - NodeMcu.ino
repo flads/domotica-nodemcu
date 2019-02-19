@@ -1,5 +1,5 @@
 // DESENVOLVIMENTO E IMPLANTAÇÃO DA DOMÓTICA NO IFRN CAMPUS MOSSORÓ
-// Autores: Ailson Ferreira,Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Sara Melo.
+// Autores: Ailson Ferreira, Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Sara Melo.
 // 07 de Setembro de 2018 --- IFRN - Campus Mossoró
 
 // BIBLIOTECA MQTT
