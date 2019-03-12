@@ -1,5 +1,5 @@
 // DESENVOLVIMENTO E IMPLANTAÇÃO DA DOMÓTICA NO IFRN CAMPUS MOSSORÓ
-// Autores: Ailson Ferreira, Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Sara Melo.
+// Autores: Ailson Ferreira, Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Vitor Ropke.
 // 07 de Setembro de 2018 --- IFRN - Campus Mossoró
 
 // BIBLIOTECA MQTT
@@ -34,11 +34,11 @@
 #define LedAr2      /*D10/TX*/  1   // LED 4 - Ar 2
 
 // SSID E SENHA DO ROTEADOR
-const char* SSID = "DomoticaNode";
-const char* PASSWORD = "iotsenha123";
+const char* SSID = "lucia souza";
+const char* PASSWORD = "52230919";
 
 // BROKER E PORTA
-const char* BROKER_MQTT = "10.0.0.8";
+const char* BROKER_MQTT = "test.mosquitto.org";
 int BROKER_PORT = 1883;
 
 // INSTANCIANDO O OBJETO
