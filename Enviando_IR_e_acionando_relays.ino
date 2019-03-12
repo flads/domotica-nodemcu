@@ -1,10 +1,11 @@
 // DESENVOLVIMENTO E IMPLANTAÇÃO DA DOMÓTICA NO IFRN CAMPUS MOSSORÓ
-// Autores: Ailson Ferreira, Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Vitor Ropke.
+// Autores: Ailson Ferreira,Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Sara Melo.
 // 07 de Setembro de 2018 --- IFRN - Campus Mossoró
 
 // BIBLIOTECA MQTT
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <time.h>
 
 // BIBLIOTECA IRremote
 #ifndef UNIT_TEST
@@ -33,9 +34,13 @@
 #define LedAr1      /*D9/RX*/   3   // LED 3 - Ar 1
 #define LedAr2      /*D10/TX*/  1   // LED 4 - Ar 2
 
+//VARIÁVEIS DE TEMPO
+int times = -3 * 3600;
+int sdt = 0;
+
 // SSID E SENHA DO ROTEADOR
-const char* SSID = "lucia souza";
-const char* PASSWORD = "52230919";
+const char* SSID = "Domotica-IF";
+const char* PASSWORD = "iotsenha123";
 
 // BROKER E PORTA
 const char* BROKER_MQTT = "test.mosquitto.org";
@@ -49,6 +54,7 @@ PubSubClient MQTT(espClient);
 void conectaWiFi();
 void conectaMQTT();
 void mqtt_callback(char* topic, byte* payload, unsigned int length);
+void tempo();
 void enviaEstado();
 
 // PINOS QUE ENVIARÁ O SINAL INFRA-VERMELHO
@@ -87,6 +93,8 @@ void setup()
 
   MQTT.setServer(BROKER_MQTT, BROKER_PORT);
   MQTT.setCallback(mqtt_callback);
+
+  Serial.begin(115200);
 }
 
 void conectaWiFi()
@@ -103,8 +111,18 @@ void conectaWiFi()
     digitalWrite(WiFiBroker, LOW);
     delay(50);
   }
+
+  configTime(times, sdt, "pool.ntp.org","time.nist.gov");
+  
+  while(!time(nullptr))
+  {
+    digitalWrite(WiFiBroker, HIGH);
+    delay(500);
+    digitalWrite(WiFiBroker, LOW);
+    delay(500);
+  }
+
   digitalWrite(WiFiBroker, HIGH);
-  Serial.print("conectado");
 }
 
 void conectaMQTT()
@@ -121,6 +139,63 @@ void conectaMQTT()
       digitalWrite(WiFiBroker, HIGH);
     }
   }
+}
+
+void tempo()
+{
+  int horaInicio = 16, minutoInicio = 45, horaFim = 16, minutoFim = 46;
+  
+  time_t now = time(nullptr);
+  struct tm* p_tm = localtime(&now);
+  
+  //LIGA RELÉ
+  if( (p_tm->tm_hour == horaInicio) && (p_tm->tm_min == minutoInicio) )
+  {
+    bool teste = digitalRead(Relay2);
+    
+    if(teste == LOW)
+    {
+      return;
+    }
+    else
+    {
+      digitalWrite(Relay2, LOW);
+      enviaEstado();
+    }
+  }
+
+  //DESLIGA RELÉ
+  if( (p_tm->tm_hour == horaFim) && (p_tm->tm_min == minutoFim) )
+  {
+    bool teste = digitalRead(Relay2);
+    
+    if(teste == HIGH)
+    {
+      return;
+    }
+    else
+    {
+      digitalWrite(Relay2, HIGH);
+      enviaEstado();
+    }
+
+    if(horaFim == 15 and minutoFim == 44)
+    {
+      horaInicio = 15;
+      minutoInicio = 45;
+      horaFim = 15;
+      minutoFim = 46;
+    }
+    else if(horaFim == 15 and minutoFim == 46)
+    {
+      horaInicio = 15;
+      minutoInicio = 47;
+      horaFim = 15;
+      minutoFim = 48;
+    }
+  }
+
+  delay(1000);
 }
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length) 
@@ -202,39 +277,54 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 }
 
 void enviaEstado(){
-  if (MQTT.connected()){
-    if (digitalRead(LedAr1) == LOW){
-      if(digitalRead(LedAr2) == LOW){
-        if(digitalRead(Relay2) == HIGH){
+  if (MQTT.connected())
+  {
+    if (digitalRead(LedAr1) == LOW)
+    {
+      if(digitalRead(LedAr2) == LOW)
+      {
+        if(digitalRead(Relay2) == HIGH)
+        {
           MQTT.publish(TOPICO_PUBLISH, "1off2off3off");
         }
-        else{
+        else
+        {
           MQTT.publish(TOPICO_PUBLISH, "1off2off3on");
         }
       }
-      else{
-        if(digitalRead(Relay2) == HIGH){
+      else
+      {
+        if(digitalRead(Relay2) == HIGH)
+        {
           MQTT.publish(TOPICO_PUBLISH, "1off2on3off");
         }
-        else{
+        else
+        {
           MQTT.publish(TOPICO_PUBLISH, "1off2on3on");
         }
       }
     }
-    else{
-      if(digitalRead(LedAr2) == HIGH){
-        if (digitalRead(Relay2) == LOW){
+    else
+    {
+      if(digitalRead(LedAr2) == HIGH)
+      {
+        if (digitalRead(Relay2) == LOW)
+        {
           MQTT.publish(TOPICO_PUBLISH, "1on2on3on");
         }
-        else{
+        else
+        {
           MQTT.publish(TOPICO_PUBLISH, "1on2on3off");
         }
       }
-      else{
-        if(digitalRead(Relay2) == LOW){
+      else
+      {
+        if(digitalRead(Relay2) == LOW)
+        {
           MQTT.publish(TOPICO_PUBLISH, "1on2off3on");
         }
-        else{
+        else
+        {
           MQTT.publish(TOPICO_PUBLISH, "1on2off3off");
         }
       }
@@ -242,7 +332,7 @@ void enviaEstado(){
   }
 }
 
-void controleManual()
+/*void controleManual()
 {
   estadoRelay2 = digitalRead(Relay2);
 
@@ -281,11 +371,12 @@ void controleManual()
       delay(100);
     }
   }
-}
+}*/
 
 void loop(){
   conectaWiFi();
   conectaMQTT();
-  controleManual();
+  //controleManual();
+  tempo();
   MQTT.loop();
 }
