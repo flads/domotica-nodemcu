@@ -1,6 +1,6 @@
 // DESENVOLVIMENTO E IMPLANTAÇÃO DA DOMÓTICA NO IFRN CAMPUS MOSSORÓ
 // Autores: Ailson Ferreira, Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Vitor Ropke.
-// 07 de Setembro de 2018 --- IFRN - Campus Mossoró
+// 16 de Março de 2019 --- IFRN - Campus Mossoró
 
 // BIBLIOTECA MQTT
 #include <ESP8266WiFi.h>
@@ -14,11 +14,11 @@
 #include <IRsend.h>
 
 // TÓPICOS
-#define TOPICO_SUBSCRIBE "sala1Envia"
-#define TOPICO_PUBLISH "sala1Recebe"
+#define TOPICO_SUBSCRIBE "domotica200a"
+#define TOPICO_PUBLISH "domotica200b"
 
 // ID DO NODE
-#define ID_MQTT "NodeMcu-3"
+#define ID_MQTT "NodeMcu-Prototeste"
 
 // PINAGEM
 #define Relay1      /*D0*/      16  // Relé 1
@@ -38,7 +38,8 @@ const char* SSID = "lucia souza";
 const char* PASSWORD = "52230919";
 
 // BROKER E PORTA
-const char* BROKER_MQTT = "test.mosquitto.org";
+const char* BROKER_MQTT = "iot.eclipse.org";
+// const char* BROKER_MQTT = "test.mosquitto.org";
 int BROKER_PORT = 1883;
 
 // INSTANCIANDO O OBJETO
@@ -63,22 +64,12 @@ uint16_t desliga_Ar2[200] = {4352,4398,538,1676,548,546,546,1590,592,1632,548,54
 uint16_t aumenta[] = {};
 uint16_t diminuir[] = {};
 
-// VARIÁVEIS DOS BOTÕES
-int estadoRelay2 = HIGH;
-int estadoBotao1 = LOW;
-int estadoAnteriorB1 = LOW;
-int estadoBotao2 = LOW;
-int estadoAnteriorB2 = LOW;
-int estado = LOW;
-
 void setup()
 {
   pinMode(LedAr1, OUTPUT);
   pinMode(LedAr2, OUTPUT);
   pinMode(Relay2, OUTPUT);
   pinMode(WiFiBroker, OUTPUT);
-  pinMode(Botao1, INPUT);
-  pinMode(Botao2, INPUT);
   
   digitalWrite(Relay2, HIGH);
 
@@ -202,90 +193,46 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 }
 
 void enviaEstado(){
-  if (MQTT.connected()){
-    if (digitalRead(LedAr1) == LOW){
-      if(digitalRead(LedAr2) == LOW){
-        if(digitalRead(Relay2) == HIGH){
-          MQTT.publish(TOPICO_PUBLISH, "1off2off3off");
-        }
-        else{
-          MQTT.publish(TOPICO_PUBLISH, "1off2off3on");
-        }
-      }
-      else{
-        if(digitalRead(Relay2) == HIGH){
-          MQTT.publish(TOPICO_PUBLISH, "1off2on3off");
-        }
-        else{
-          MQTT.publish(TOPICO_PUBLISH, "1off2on3on");
-        }
-      }
+    int cont = 0;
+    
+    if (digitalRead(LedAr1) == HIGH){
+      MQTT.publish(TOPICO_PUBLISH, "1L");
+      cont += 1;
     }
-    else{
-      if(digitalRead(LedAr2) == HIGH){
-        if (digitalRead(Relay2) == LOW){
-          MQTT.publish(TOPICO_PUBLISH, "1on2on3on");
-        }
-        else{
-          MQTT.publish(TOPICO_PUBLISH, "1on2on3off");
-        }
-      }
-      else{
-        if(digitalRead(Relay2) == LOW){
-          MQTT.publish(TOPICO_PUBLISH, "1on2off3on");
-        }
-        else{
-          MQTT.publish(TOPICO_PUBLISH, "1on2off3off");
-        }
-      }
-    }
-  }
-}
-
-void controleManual()
-{
-  estadoRelay2 = digitalRead(Relay2);
-
-  if(estadoRelay2 == LOW)
-  {
-    estadoBotao1 = digitalRead(Botao1);
-
-    if(estadoBotao1 == HIGH)
+    else
     {
-      estado = !estado;
-      delay(1000);
+      MQTT.publish(TOPICO_PUBLISH, "1D");
     }
-
-    if(estado == HIGH and estadoAnteriorB1 == LOW)
-    {
-      estadoBotao2 = digitalRead(Botao2);
-
-      if(estadoBotao2 == HIGH and estadoAnteriorB2 == LOW)
-      {
-        irsend_Ar1.sendRaw(liga_Ar1, 348, 32);
-        digitalWrite(LedAr1, HIGH);
-        enviaEstado();
-        estadoAnteriorB2 = HIGH;
-        delay(100);
-      }
-      else if(estadoBotao2 == HIGH and estadoAnteriorB2 == HIGH)
-      {
-        irsend_Ar1.sendRaw(desliga_Ar1, 348, 32);
-        digitalWrite(LedAr1, LOW);
-        enviaEstado();
-        estadoAnteriorB2 = LOW;
-        delay(100);
-      }
       
-      estadoAnteriorB1 = LOW;
-      delay(100);
+    if (digitalRead(LedAr2) == HIGH){
+      MQTT.publish(TOPICO_PUBLISH, "2L");
+      cont += 1;
     }
-  }
+    else
+    {
+      MQTT.publish(TOPICO_PUBLISH, "2D");
+    }
+    
+    if (digitalRead(Relay2)== LOW){
+      MQTT.publish(TOPICO_PUBLISH, "3L");
+      cont += 1;
+    }
+    else
+    {
+      MQTT.publish(TOPICO_PUBLISH, "3D");
+    }
+    
+    if (cont == 3){
+      MQTT.publish(TOPICO_PUBLISH, "4L");
+    }
+    else if (cont == 0)
+    {
+      MQTT.publish(TOPICO_PUBLISH, "4D");
+    }
 }
 
 void loop(){
   conectaWiFi();
   conectaMQTT();
-  controleManual();
   MQTT.loop();
 }
