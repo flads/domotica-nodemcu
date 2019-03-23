@@ -1,10 +1,11 @@
 // DESENVOLVIMENTO E IMPLANTAÇÃO DA DOMÓTICA NO IFRN CAMPUS MOSSORÓ
 // Autores: Ailson Ferreira, Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Vitor Ropke.
-// 16 de Março de 2019 --- IFRN - Campus Mossoró
+// 19 de Março de 2019 --- IFRN - Campus Mossoró
 
 // BIBLIOTECA MQTT
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <time.h>
 
 // BIBLIOTECA IRremote
 #ifndef UNIT_TEST
@@ -14,11 +15,11 @@
 #include <IRsend.h>
 
 // TÓPICOS
-#define TOPICO_SUBSCRIBE "domotica200a"
-#define TOPICO_PUBLISH "domotica200b"
+#define TOPICO_SUBSCRIBE "domotica202a"
+#define TOPICO_PUBLISH "domotica202b"
 
 // ID DO NODE
-#define ID_MQTT "NodeMcu-Prototeste"
+#define ID_MQTT "NodeMcu-4"
 
 // PINAGEM
 #define Relay1      /*D0*/      16  // Relé 1
@@ -34,23 +35,27 @@
 #define LedAr2      /*D10/TX*/  1   // LED 4 - Ar 2
 
 // SSID E SENHA DO ROTEADOR
-const char* SSID = "lucia souza";
-const char* PASSWORD = "52230919";
+const char* SSID = "Domotica-IF";
+const char* PASSWORD = "iotsenha123";
 
 // BROKER E PORTA
 const char* BROKER_MQTT = "iot.eclipse.org";
-// const char* BROKER_MQTT = "test.mosquitto.org";
 int BROKER_PORT = 1883;
+
+// VARIÁVEIS DE TEMPO
+int fusoHorario = -3 * 3600;
+int horarioDeVerao = 0;
 
 // INSTANCIANDO O OBJETO
 WiFiClient espClient;
 PubSubClient MQTT(espClient);
 
 // DEFININDO FUNÇÕES
-void conectaWiFi();
 void conectaMQTT();
-void mqtt_callback(char* topic, byte* payload, unsigned int length);
+void conectaWiFi();
 void enviaEstado();
+void mqtt_callback(char* topic, byte* payload, unsigned int length);
+void tempo(int horaInicio, int minutoInicio, int horaFim, int minutoFim);
 
 // PINOS QUE ENVIARÁ O SINAL INFRA-VERMELHO
 IRsend irsend_Ar1(Ar1);
@@ -64,42 +69,15 @@ uint16_t desliga_Ar2[200] = {4352,4398,538,1676,548,546,546,1590,592,1632,548,54
 uint16_t aumenta[] = {};
 uint16_t diminuir[] = {};
 
-void setup()
-{
-  pinMode(LedAr1, OUTPUT);
-  pinMode(LedAr2, OUTPUT);
-  pinMode(Relay2, OUTPUT);
-  pinMode(WiFiBroker, OUTPUT);
-  
-  digitalWrite(Relay2, HIGH);
+// VARIÁVEIS DOS BOTÕES
+int estadoRelay2 = HIGH;
+int estadoBotao1 = LOW;
+int estadoAnteriorB1 = LOW;
+int estadoBotao2 = LOW;
+int estadoAnteriorB2 = LOW;
+int estado = LOW;
 
-  irsend_Ar1.begin();
-  irsend_Ar2.begin();
-
-  MQTT.setServer(BROKER_MQTT, BROKER_PORT);
-  MQTT.setCallback(mqtt_callback);
-}
-
-void conectaWiFi()
-{
-  if(WiFi.status() == WL_CONNECTED)
-    return;
-
-  WiFi.begin(SSID, PASSWORD);
-
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    digitalWrite(WiFiBroker, HIGH);
-    delay(50);
-    digitalWrite(WiFiBroker, LOW);
-    delay(50);
-  }
-  digitalWrite(WiFiBroker, HIGH);
-  Serial.print("conectado");
-}
-
-void conectaMQTT()
-{
+void conectaMQTT(){
   while (!MQTT.connected())
   {
     digitalWrite(WiFiBroker, HIGH);
@@ -114,8 +92,74 @@ void conectaMQTT()
   }
 }
 
-void mqtt_callback(char* topic, byte* payload, unsigned int length) 
-{
+void conectaWiFi(){
+  if(WiFi.status() == WL_CONNECTED)
+    return;
+
+  WiFi.begin(SSID, PASSWORD);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    digitalWrite(WiFiBroker, HIGH);
+    delay(50);
+    digitalWrite(WiFiBroker, LOW);
+    delay(50);
+  }
+
+  configTime(fusoHorario, horarioDeVerao, "pool.ntp.org", "time.nist.gov", "a.st1.ntp.br");
+  
+  while(!time(nullptr))
+  {
+    digitalWrite(WiFiBroker, HIGH);
+    delay(500);
+    digitalWrite(WiFiBroker, LOW);
+    delay(500);
+  }
+
+  digitalWrite(WiFiBroker, HIGH);
+}
+
+void enviaEstado(){
+    int cont = 0;
+    
+    if (digitalRead(LedAr1) == HIGH){
+      MQTT.publish(TOPICO_PUBLISH, "1L");
+      cont += 1;
+    }
+    else
+    {
+      Serial.print("Aqui");
+      MQTT.publish(TOPICO_PUBLISH, "1D");
+    }
+      
+    if (digitalRead(LedAr2) == HIGH){
+      MQTT.publish(TOPICO_PUBLISH, "2L");
+      cont += 1;
+    }
+    else
+    {
+      MQTT.publish(TOPICO_PUBLISH, "2D");
+    }
+    
+    if (digitalRead(Relay2)== LOW){
+      MQTT.publish(TOPICO_PUBLISH, "3L");
+      cont += 1;
+    }
+    else
+    {
+      MQTT.publish(TOPICO_PUBLISH, "3D");
+    }
+    
+    if (cont == 3){
+      MQTT.publish(TOPICO_PUBLISH, "4L");
+    }
+    else if (cont == 0)
+    {
+      MQTT.publish(TOPICO_PUBLISH, "4D");
+    }
+}
+
+void mqtt_callback(char* topic, byte* payload, unsigned int length){
     String msg;
 
     //obtem a string do payload recebido
@@ -192,47 +236,129 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
     }
 }
 
-void enviaEstado(){
-    int cont = 0;
+void tempo(int horaInicio, int minutoInicio, int horaFim, int minutoFim)
+{
+  time_t now = time(nullptr);
+  struct tm* p_tm = localtime(&now);
+
+  Serial.print(p_tm->tm_hour);
+  Serial.println(p_tm->tm_min);
+  
+  // LIGA RELÉ
+  if((p_tm->tm_hour == horaInicio) && (p_tm->tm_min == minutoInicio))
+  {
+    bool teste = digitalRead(Relay2);
     
-    if (digitalRead(LedAr1) == HIGH){
-      MQTT.publish(TOPICO_PUBLISH, "1L");
-      cont += 1;
+    if(teste == LOW)
+    {
+      return;
     }
     else
     {
-      MQTT.publish(TOPICO_PUBLISH, "1D");
+      digitalWrite(Relay2, LOW);
+      enviaEstado();
     }
+  }
+
+  // DESLIGA RELÉ
+  if((p_tm->tm_hour == horaFim) && (p_tm->tm_min == minutoFim))
+  {
+    bool teste = digitalRead(Relay2);
+    
+    if(teste == HIGH)
+    {
+      return;
+    }
+    else
+    {
+      digitalWrite(Relay2, HIGH);
+      enviaEstado();
+    }
+    
+    if(horaFim == 14 and minutoFim == 31)
+    {
+      horaInicio = 14;
+      minutoInicio = 32;
+      horaFim = 14;
+      minutoFim = 33;
+    }
+    else if(horaFim == 14 and minutoFim == 33)
+    {
+      horaInicio = 14;
+      minutoInicio = 34;
+      horaFim = 14;
+      minutoFim = 35;
+    }
+  }
+
+  delay(1000);
+}
+
+/*void controleManual()
+{
+  estadoRelay2 = digitalRead(Relay2);
+
+  if(estadoRelay2 == LOW)
+  {
+    estadoBotao1 = digitalRead(Botao1);
+
+    if(estadoBotao1 == HIGH)
+    {
+      estado = !estado;
+      delay(1000);
+    }
+
+    if(estado == HIGH and estadoAnteriorB1 == LOW)
+    {
+      estadoBotao2 = digitalRead(Botao2);
+
+      if(estadoBotao2 == HIGH and estadoAnteriorB2 == LOW)
+      {
+        irsend_Ar1.sendRaw(liga_Ar1, 348, 32);
+        digitalWrite(LedAr1, HIGH);
+        enviaEstado();
+        estadoAnteriorB2 = HIGH;
+        delay(100);
+      }
+      else if(estadoBotao2 == HIGH and estadoAnteriorB2 == HIGH)
+      {
+        irsend_Ar1.sendRaw(desliga_Ar1, 348, 32);
+        digitalWrite(LedAr1, LOW);
+        enviaEstado();
+        estadoAnteriorB2 = LOW;
+        delay(100);
+      }
       
-    if (digitalRead(LedAr2) == HIGH){
-      MQTT.publish(TOPICO_PUBLISH, "2L");
-      cont += 1;
+      estadoAnteriorB1 = LOW;
+      delay(100);
     }
-    else
-    {
-      MQTT.publish(TOPICO_PUBLISH, "2D");
-    }
-    
-    if (digitalRead(Relay2)== LOW){
-      MQTT.publish(TOPICO_PUBLISH, "3L");
-      cont += 1;
-    }
-    else
-    {
-      MQTT.publish(TOPICO_PUBLISH, "3D");
-    }
-    
-    if (cont == 3){
-      MQTT.publish(TOPICO_PUBLISH, "4L");
-    }
-    else if (cont == 0)
-    {
-      MQTT.publish(TOPICO_PUBLISH, "4D");
-    }
+  }
+}*/
+
+void setup()
+{
+  pinMode(LedAr1, OUTPUT);
+  pinMode(LedAr2, OUTPUT);
+  pinMode(Relay2, OUTPUT);
+  pinMode(WiFiBroker, OUTPUT);
+  //pinMode(Botao1, INPUT);
+  //pinMode(Botao2, INPUT);
+  
+  digitalWrite(Relay2, HIGH);
+
+  irsend_Ar1.begin();
+  irsend_Ar2.begin();
+
+  MQTT.setServer(BROKER_MQTT, BROKER_PORT);
+  MQTT.setCallback(mqtt_callback);
+
+  //Serial.begin(115200);
 }
 
 void loop(){
   conectaWiFi();
   conectaMQTT();
+  //controleManual();
+  tempo(14, 30, 14, 31);
   MQTT.loop();
 }
