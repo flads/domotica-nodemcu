@@ -1,6 +1,6 @@
 // DESENVOLVIMENTO E IMPLANTAÇÃO DA DOMÓTICA NO IFRN CAMPUS MOSSORÓ
 // Autores: Ailson Ferreira, Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Vitor Ropke.
-// 26 de Março de 2019 --- IFRN - Campus Mossoró
+// 27 de Março de 2019 --- IFRN - Campus Mossoró
 
 // Incluindo bibliotecas:
 #include <ESP8266WiFi.h>
@@ -15,11 +15,11 @@
 #include <IRsend.h>
 
 // Definindo os tópicos MQTT:
-#define TOPICO_SUBSCRIBE "domotica209a"
-#define TOPICO_PUBLISH "domotica209b"
+#define TOPICO_SUBSCRIBE "domotica205a"
+#define TOPICO_PUBLISH "domotica205b"
 
 // Definindo o ID deste NodeMcu:
-#define ID_MQTT "NodeMcu-1"
+#define ID_MQTT "NodeMcu-4"
 
 // Definindo a pinagem:
 #define Relay1      /*D0*/      16  // Relé 1
@@ -204,13 +204,6 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
     {
       enviaEstado();
     }
-
-    // // Alguém acabou de programar os horários de acionamento:
-    // if (msg.equals("TIME"))
-    // {
-    //   verificaHorario(1);
-    // }
-
 }
 
 // Criando função para o envio do estado atual dos dispositivos:
@@ -254,38 +247,50 @@ void enviaEstado()
     }
 }
 
-// Criando função para o envio do estado atual dos dispositivos:
 void verificaHorario()
 {
+  // ----- CÓDIGO PARA PEGAR OS DADOS VIA JSON -----
   // Instanciando um objeto da classe HTTPClient:
   // HTTPClient http;
   // http.begin("https://www.domotica.cc/classrooms/205/schedules");
   // int httpCode = http.GET();
   // if (httpCode > 0)
   // {
-        const size_t root = JSON_OBJECT_SIZE(12) + 100;
-        // const size_t root = JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(5) + JSON_OBJECT_SIZE(8) + 370;
-        DynamicJsonDocument doc(root);
-        const char* json = "{\"m_on_h\":23,\"m_on_m\":51,\"m_off_h\":23,\"m_off_m\":53,\"a_on_h\":23,\"a_on_m\":55,\"a_off_h\":23,\"a_off_m\":56,\"n_on_h\":23,\"n_on_m\":58,\"n_off_h\":0,\"n_off_m\":0}";
-        // deserializeJson(doc, http.getString());
-        deserializeJson(doc, json);
+      // const size_t root = JSON_OBJECT_SIZE(12) + 100;
+      // DynamicJsonDocument doc(root);
+      // const char* json = "{\"m_on_h\":23,\"m_on_m\":51,\"m_off_h\":23,\"m_off_m\":53,\"a_on_h\":23,\"a_on_m\":55,\"a_off_h\":23,\"a_off_m\":56,\"n_on_h\":23,\"n_on_m\":58,\"n_off_h\":0,\"n_off_m\":0}";
+      // deserializeJson(doc, http.getString());
+      // deserializeJson(doc, json);
 
-        // Armazenando os horários em variáveis:
-        int m_on_h = doc["m_on_h"];
-        int m_on_m = doc["m_on_m"];
-        int m_off_h = doc["m_off_h"];
-        int m_off_m = doc["m_off_m"];
-        int a_on_h = doc["a_on_h"];
-        int a_on_m = doc["a_on_m"];
-        int a_off_h = doc["a_off_h"];
-        int a_off_m = doc["a_off_m"];
-        int n_on_h = doc["n_on_h"];
-        int n_on_m = doc["n_on_m"];
-        int n_off_h = doc["n_off_h"];
-        int n_off_m = doc["n_off_m"];
+      // Armazenando os horários em variáveis:
+      // int m_on_h = doc["m_on_h"];
+      // int m_on_m = doc["m_on_m"];
+      // int m_off_h = doc["m_off_h"];
+      // int m_off_m = doc["m_off_m"];
+      // int a_on_h = doc["a_on_h"];
+      // int a_on_m = doc["a_on_m"];
+      // int a_off_h = doc["a_off_h"];
+      // int a_off_m = doc["a_off_m"];
+      // int n_on_h = doc["n_on_h"];
+      // int n_on_m = doc["n_on_m"];
+      // int n_off_h = doc["n_off_h"];
+      // int n_off_m = doc["n_off_m"];
   // }
-
   // http.end();
+  // ----- FIM DO CÓDIGO PARA PEGAR OS DADOS VIA JSON -----
+
+  int m_on_h = 6;
+  int m_on_m = 50;
+  int m_off_h = 12;
+  int m_off_m = 0;
+  int a_on_h = 12;
+  int a_on_m = 50;
+  int a_off_h = 18;
+  int a_off_m = 0;
+  int n_on_h = 18;
+  int n_on_m = 50;
+  int n_off_h = 22;
+  int n_off_m = 0;
 
   time_t now = time(nullptr);
   struct tm* p_tm = localtime(&now);
@@ -294,9 +299,8 @@ void verificaHorario()
   int segundo = p_tm->tm_sec;
 
   Serial.print(hora);
-  Serial.println(segundo);
   Serial.println(minuto);
-  // delay(250);
+  Serial.println(segundo);
   
   // Ligando dispositivos caso seja um horário programado:
   if((hora == m_on_h && minuto == m_on_m) || (hora == a_on_h && minuto == a_on_m) || (hora == n_on_h && minuto == n_on_m))
