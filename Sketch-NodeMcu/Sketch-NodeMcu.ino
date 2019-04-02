@@ -5,7 +5,6 @@
 // Incluindo bibliotecas:
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <ArduinoJson.h>
 #include <PubSubClient.h>
 #include <time.h>
 #ifndef UNIT_TEST
@@ -13,13 +12,13 @@
 #endif
 #include <IRremoteESP8266.h>
 #include <IRsend.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <iostream>
+#include <string>
+#include <sstream>
 
 // Definindo os tópicos MQTT:
-#define TOPICO_SUBSCRIBE "domotica200a"
-#define TOPICO_PUBLISH "domotica200b"
+#define TOPICO_SUBSCRIBE "domotica207a"
+#define TOPICO_PUBLISH "domotica207b"
 
 // Definindo o ID deste NodeMcu:
 #define ID_MQTT "NodeMcu-4"
@@ -50,12 +49,18 @@ int fusoHorario = -3 * 3600;
 int horarioDeVerao = 0;
 
 // Definindo as variáveis do acionamento programado:
-String mon = "0";
-String moff = "0";
-String aon = "0";
-String aoff = "0";
-String non = "0";
-String noff = "0";
+String m_on_h = "0";
+String m_on_m = "0";
+String m_off_h = "0";
+String m_off_m = "0";
+String a_on_h = "0";
+String a_on_m = "0";
+String a_off_h = "0";
+String a_off_m = "0";
+String n_on_h = "0";
+String n_on_m = "0";
+String n_off_h = "0";
+String n_off_m = "0";
 int cont = 1;
 
 // Instanciando um objeto da classe WiFiClient:
@@ -143,50 +148,89 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 {
     String msg;
     String first;
-    String schedule;
+    String schedule_a;
+    String schedule_b;
+    String c_string_a;
+    String c_string_b;
 
     first = (char)payload[0];
 
-    for(int i = 1; i < length; i++){
-       char c = (char)payload[i];
-       schedule += c;
-    }
-
     if(first == "t")
     {
-        if(cont == 1)
+      for(int i = 1; i < 3; i++){
+        c_string_a = "";
+        char c = (char)payload[i];
+        c_string_a += c;
+        if(i == 1)
         {
-          mon = schedule;
+          if(c_string_a != "0")
+          {
+            schedule_a += c_string_a;
+          }
         }
+        if(i == 2)
+        {
+            schedule_a += c_string_a;
+        }
+      }
 
-        else if(cont == 2)
+      for(int i = 3; i < 5; i++){
+        c_string_b = "";
+        char c = (char)payload[i];
+        c_string_b += c;
+        if(i == 3)
         {
-          moff = schedule;
+          if(c_string_b != "0")
+          {
+            schedule_b += c_string_b;
+          }
         }
+        if(i == 4)
+        {
+            schedule_b += c_string_b;
+        }
+      }
 
-        else if(cont == 3)
-        {
-          aon = schedule;
-        }
+      if(cont == 1)
+      {
+        m_on_h = schedule_a;
+        m_on_m = schedule_b;
+      }
 
-        else if(cont == 4)
-        {
-          aoff = schedule;
-        }
+      else if(cont == 2)
+      {
+        m_off_h = schedule_a;
+        m_off_m = schedule_b;
+      }
 
-        else if(cont == 5)
-        {
-          non = schedule;
-        }
+      else if(cont == 3)
+      {
+        a_on_h = schedule_a;
+        a_on_m = schedule_b;
+      }
 
-        else if(cont == 6)
-        {
-          noff = schedule;
-          cont = 0;
-        }
+      else if(cont == 4)
+      {
+        a_off_h = schedule_a;
+        a_off_m = schedule_b;
+      }
+
+      else if(cont == 5)
+      {
+        n_on_h = schedule_a;
+        n_on_m = schedule_b;
+      }
+
+      else if(cont == 6)
+      {
+        n_off_h = schedule_a;
+        n_off_m = schedule_b;
+        cont = 0;
+      }
     
-    cont += 1;
+      cont += 1;
     }
+    
 
     //obtem a string do payload recebido
     for(int i = 0; i < length; i++){
@@ -307,12 +351,18 @@ void enviaEstado()
 void verificaHorario()
 {
   Serial.println("...");
-  Serial.println(mon);
-  Serial.println(moff);
-  Serial.println(aon);
-  Serial.println(aoff);
-  Serial.println(non);
-  Serial.println(noff);
+  Serial.println(m_on_h);
+  Serial.println(m_on_m);
+  Serial.println(m_off_h);
+  Serial.println(m_off_m);
+  Serial.println(a_on_h);
+  Serial.println(a_on_m);
+  Serial.println(a_off_h);
+  Serial.println(a_off_m);
+  Serial.println(n_on_h);
+  Serial.println(n_on_m);
+  Serial.println(n_off_h);
+  Serial.println(n_off_m);
   Serial.println("...");
 
   time_t now = time(nullptr);
@@ -321,38 +371,87 @@ void verificaHorario()
   int minuto = p_tm->tm_min;
   int segundo = p_tm->tm_sec;
 
+  // std::ostringstream hour;
+  // std::ostringstream minute;
+
+  // std::ostringstream sm_on_h;
+  // std::ostringstream sm_on_m;
+  // std::ostringstream sm_off_h;
+  // std::ostringstream sm_off_m;
+  // std::ostringstream sa_on_h;
+  // std::ostringstream sa_on_m;
+  // std::ostringstream sa_off_h;
+  // std::ostringstream sa_off_m;
+  // std::ostringstream sn_on_h;
+  // std::ostringstream sn_on_m;
+  // std::ostringstream sn_off_h;
+  // std::ostringstream sn_off_m;
+
+  // hour << hora;
+  // minute << minuto;
+
+  // sm_on_h << m_on_h;
+  // sm_on_m << m_on_m;
+  // sm_off_h << m_off_h;
+  // sm_off_m << m_off_m;
+  // sa_on_h << a_on_h;
+  // sa_on_m << a_on_m;
+  // sa_off_h << a_off_h;
+  // sa_off_m << a_off_m;
+  // sn_on_h << n_on_h;
+  // sn_on_m << n_on_m;
+  // sn_off_h << n_off_h;
+  // sn_off_m << n_off_m;
+
+  // std::cout << hour.str() << std::endl;
+  // std::cout << minute.str() << std::endl;
+
+  // std::cout << sm_on_h.str() << std::endl;
+  // std::cout << sm_on_m.str() << std::endl;
+  // std::cout << sm_off_h.str() << std::endl;
+  // std::cout << sm_off_m.str() << std::endl;
+  // std::cout << sa_on_h.str() << std::endl;
+  // std::cout << sa_on_m.str() << std::endl;
+  // std::cout << sa_off_h.str() << std::endl;
+  // std::cout << sa_off_m.str() << std::endl;
+  // std::cout << sn_on_h.str() << std::endl;
+  // std::cout << sn_on_m.str() << std::endl;
+  // std::cout << sn_off_h.str() << std::endl;
+  // std::cout << sn_off_m.str() << std::endl;
+
   // Serial.println(hora);
   // Serial.println(minuto);
   // Serial.println(segundo);
   // Serial.println("...");
   
-  // Ligando dispositivos caso seja um horário programado:
-  // if((hora == m_on_h && minuto == m_on_m) || (hora == a_on_h && minuto == a_on_m) || (hora == n_on_h && minuto == n_on_m))
-  // {
-  //   if(segundo == 0 || segundo == 1)
-  //   {
-  //     digitalWrite(Relay2, LOW);
-  //     irsend_Ar1.sendRaw(liga_Ar1, 348, 32);
-  //     irsend_Ar2.sendRaw(liga_Ar2, 200, 32);
-  //     digitalWrite(LedAr1, HIGH);
-  //     digitalWrite(LedAr2, HIGH);
-  //     enviaEstado();
-  //   }    
-  // }
+  if((hora == m_on_h && minuto == m_on_m) || (hora == a_on_h && minuto == a_on_m) || (hora == n_on_h && minuto == n_on_m))
+  {
+    if(segundo == 0 || segundo == 1)
+    {
+      digitalWrite(Relay2, LOW);
+      irsend_Ar1.sendRaw(liga_Ar1, 348, 32);
+      irsend_Ar2.sendRaw(liga_Ar2, 200, 32);
+      digitalWrite(LedAr1, HIGH);
+      digitalWrite(LedAr2, HIGH);
+      enviaEstado();
+      Serial.println("LIGANDO!!!");
+    }    
+  }
 
-  // // Desigando dispositivos caso seja um horário programado:
-  // if((hora == m_off_h && minuto == m_off_m) || (hora == a_off_h && minuto == a_off_m) || (hora == n_off_h && minuto == n_off_m))
-  // {    
-  //   if(segundo == 0 || segundo == 1)
-  //   {
-  //     digitalWrite(Relay2, HIGH);
-  //     irsend_Ar1.sendRaw(desliga_Ar1, 348, 32);
-  //     irsend_Ar2.sendRaw(desliga_Ar2, 200, 32);
-  //     digitalWrite(LedAr1, LOW);
-  //     digitalWrite(LedAr2, LOW);
-  //     enviaEstado();
-  //   }
-  // }
+  // Desigando dispositivos caso seja um horário programado:
+  if((hora == m_off_h && minuto == m_off_m) || (hora == a_off_h && minuto == a_off_m) || (hora == n_off_h && minuto == n_off_m))
+  {    
+    if(segundo == 0 || segundo == 1)
+    {
+      digitalWrite(Relay2, HIGH);
+      irsend_Ar1.sendRaw(desliga_Ar1, 348, 32);
+      irsend_Ar2.sendRaw(desliga_Ar2, 200, 32);
+      digitalWrite(LedAr1, LOW);
+      digitalWrite(LedAr2, LOW);
+      enviaEstado();
+      Serial.println("DESLIGANDO!!!");
+    }
+  }
   delay(1000);
 }
 
