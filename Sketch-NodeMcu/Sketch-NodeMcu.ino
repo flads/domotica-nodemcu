@@ -17,11 +17,11 @@
 #include <sstream>
 
 // Definindo os tópicos MQTT:
-#define TOPICO_SUBSCRIBE "domotica207a"
-#define TOPICO_PUBLISH "domotica207b"
+#define TOPICO_SUBSCRIBE "domotica237a"
+#define TOPICO_PUBLISH "domotica237b"
 
 // Definindo o ID deste NodeMcu:
-#define ID_MQTT "NodeMcu-4"
+#define ID_MQTT "NodeMcu-3"
 
 // Definindo a pinagem:
 #define Relay1      /*D0*/      16  // Relé 1
@@ -371,60 +371,16 @@ void verificaHorario()
   int minuto = p_tm->tm_min;
   int segundo = p_tm->tm_sec;
 
-  // std::ostringstream hour;
-  // std::ostringstream minute;
-
-  // std::ostringstream sm_on_h;
-  // std::ostringstream sm_on_m;
-  // std::ostringstream sm_off_h;
-  // std::ostringstream sm_off_m;
-  // std::ostringstream sa_on_h;
-  // std::ostringstream sa_on_m;
-  // std::ostringstream sa_off_h;
-  // std::ostringstream sa_off_m;
-  // std::ostringstream sn_on_h;
-  // std::ostringstream sn_on_m;
-  // std::ostringstream sn_off_h;
-  // std::ostringstream sn_off_m;
-
-  // hour << hora;
-  // minute << minuto;
-
-  // sm_on_h << m_on_h;
-  // sm_on_m << m_on_m;
-  // sm_off_h << m_off_h;
-  // sm_off_m << m_off_m;
-  // sa_on_h << a_on_h;
-  // sa_on_m << a_on_m;
-  // sa_off_h << a_off_h;
-  // sa_off_m << a_off_m;
-  // sn_on_h << n_on_h;
-  // sn_on_m << n_on_m;
-  // sn_off_h << n_off_h;
-  // sn_off_m << n_off_m;
-
-  // std::cout << hour.str() << std::endl;
-  // std::cout << minute.str() << std::endl;
-
-  // std::cout << sm_on_h.str() << std::endl;
-  // std::cout << sm_on_m.str() << std::endl;
-  // std::cout << sm_off_h.str() << std::endl;
-  // std::cout << sm_off_m.str() << std::endl;
-  // std::cout << sa_on_h.str() << std::endl;
-  // std::cout << sa_on_m.str() << std::endl;
-  // std::cout << sa_off_h.str() << std::endl;
-  // std::cout << sa_off_m.str() << std::endl;
-  // std::cout << sn_on_h.str() << std::endl;
-  // std::cout << sn_on_m.str() << std::endl;
-  // std::cout << sn_off_h.str() << std::endl;
-  // std::cout << sn_off_m.str() << std::endl;
+  String hour = String(hora);
+  String minute = String(minuto);
+  // Serial.println(teste.compareTo(m_on_h));
 
   // Serial.println(hora);
   // Serial.println(minuto);
   // Serial.println(segundo);
   // Serial.println("...");
-  
-  if((hora == m_on_h && minuto == m_on_m) || (hora == a_on_h && minuto == a_on_m) || (hora == n_on_h && minuto == n_on_m))
+
+  if((hour == m_on_h && minute == m_on_m) || (hour == a_on_h && minute == a_on_m) || (hour == n_on_h && minute == n_on_m))
   {
     if(segundo == 0 || segundo == 1)
     {
@@ -438,8 +394,7 @@ void verificaHorario()
     }    
   }
 
-  // Desigando dispositivos caso seja um horário programado:
-  if((hora == m_off_h && minuto == m_off_m) || (hora == a_off_h && minuto == a_off_m) || (hora == n_off_h && minuto == n_off_m))
+  if((hour == m_off_h && minute == m_off_m) || (hour == a_off_h && minute == a_off_m) || (hour == n_off_h && minute == n_off_m))
   {    
     if(segundo == 0 || segundo == 1)
     {
@@ -451,7 +406,8 @@ void verificaHorario()
       enviaEstado();
       Serial.println("DESLIGANDO!!!");
     }
-  }
+  } 
+
   delay(1000);
 }
 
