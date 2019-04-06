@@ -1,6 +1,6 @@
 // DESENVOLVIMENTO E IMPLANTAÇÃO DA DOMÓTICA NO IFRN CAMPUS MOSSORÓ
 // Autores: Ailson Ferreira, Clayton Maciel, Fábio Lucas, Lariza Maria, Marcos Vinícius, Michel Santana e Vitor Ropke.
-// 05 de Abril de 2019 --- IFRN - Campus Mossoró
+// 06 de Abril de 2019 --- IFRN - Campus Mossoró
 
 // Incluindo bibliotecas:
 #include <ESP8266WiFi.h>
@@ -37,8 +37,8 @@
 #define LedAr2      /*D10/TX*/  1   // LED 4 - Ar 2
 
 // Definindo o SSID e a senha da rede Wi-Fi:
-const char* SSID = "lucia souza";
-const char* PASSWORD = "52230919";
+const char* SSID = "Domotica-IF";
+const char* PASSWORD = "iotsenha123";
 
 // Definindo o Broker MQTT e sua porta:
 const char* BROKER_MQTT = "iot.eclipse.org";
